@@ -2,3 +2,14 @@ backend/.venv
 backend/__pycache__
 frontend/node_modules
 backend/.env
+backend/uploads
+backend/vector_stores
+
+# Python & Testing
+.pytest_cache/
+backend/.pytest_cache/
+*.db
+*.pyc
+__pycache__/
+
+backend/tests/__pycache__

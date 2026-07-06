@@ -27,6 +27,9 @@ except Exception as e:
 
 def is_redis_available() -> bool:
     """Check if the Redis server is currently reachable."""
+    # Disable Redis during testing to avoid database/cache state pollution
+    if get_config().TESTING:
+        return False
     if redis_client is None:
         return False
     try:

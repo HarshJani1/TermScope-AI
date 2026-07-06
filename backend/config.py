@@ -92,7 +92,9 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
     TESTING = True
-    DB_NAME = "termscope_test"
+    SQLALCHEMY_DATABASE_URI = "sqlite:////tmp/termscope_test.db"
+    # Ensure TESSERACT_CMD or other services don't fail if not present,
+    # and use testing specific configs.
 
 
 config_map = {
