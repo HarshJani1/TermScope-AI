@@ -1,4 +1,4 @@
-import { Clock, CheckCircle2, AlertCircle, Loader2, FileText, Image } from 'lucide-react'
+import { Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 
 const STATUS_MAP = {
   uploaded:   { label: 'Uploaded',   cls: 'status-uploaded',   icon: Clock },

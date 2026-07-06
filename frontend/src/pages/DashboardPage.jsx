@@ -5,8 +5,8 @@ import { listDocuments, uploadDocument, deleteDocument } from '../api/client'
 import DropZone from '../components/DropZone'
 import DocumentCard from '../components/DocumentCard'
 import {
-  LayoutDashboard, FileText, CheckCircle2, Clock,
-  RefreshCw, AlertCircle
+  FileText, CheckCircle2, Clock,
+  RefreshCw, AlertCircle, ShieldCheck, ArrowUpRight
 } from 'lucide-react'
 import './Dashboard.css'
 
@@ -31,7 +31,7 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    fetchDocs()
+    const timer = window.setTimeout(fetchDocs, 0)
     // Poll every 5s for processing docs
     const id = setInterval(() => {
       setDocs((prev) => {
@@ -42,7 +42,10 @@ export default function DashboardPage() {
         return prev
       })
     }, 5000)
-    return () => clearInterval(id)
+    return () => {
+      window.clearTimeout(timer)
+      clearInterval(id)
+    }
   }, [fetchDocs])
 
   const handleUpload = async (file) => {
@@ -70,87 +73,127 @@ export default function DashboardPage() {
     } catch {/* silent */}
   }
 
-  // Stats
   const total     = docs.length
   const completed = docs.filter((d) => d.status === 'completed').length
   const processing = docs.filter((d) => !['completed','failed'].includes(d.status)).length
   const failed    = docs.filter((d) => d.status === 'failed').length
+  const latestDoc = docs[0]
+
+  const metrics = [
+    { label: 'Documents', value: total, icon: FileText },
+    { label: 'Analyzed', value: completed, icon: CheckCircle2 },
+    { label: 'In review', value: processing, icon: Clock },
+    { label: 'Needs attention', value: failed, icon: AlertCircle },
+  ]
 
   return (
-    <div className="page-container fade-in">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            <span className="gradient-text">Welcome, {user?.username}</span>
-          </h1>
-          <p className="page-subtitle">Upload a Terms &amp; Conditions document to get your AI analysis</p>
+    <div className="dashboard-shell fade-in">
+      <header className="dashboard-header">
+        <div className="dashboard-kicker">
+          <ShieldCheck size={14} />
+          Terms workspace
         </div>
-        <button className="btn btn-secondary" onClick={fetchDocs}>
-          <RefreshCw size={15} />
-          Refresh
-        </button>
-      </div>
+        <div className="dashboard-title-row">
+          <div>
+            <h1 className="dashboard-title">Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.username}</h1>
+            <p className="dashboard-subtitle">Review dense terms documents without letting the important clauses disappear into the margins.</p>
+          </div>
+          <button className="btn btn-secondary dashboard-refresh" onClick={fetchDocs} title="Refresh">
+            <RefreshCw size={15} />
+            Refresh
+          </button>
+        </div>
+      </header>
 
-      {/* Stats row */}
-      <div className="stats-row">
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-blue"><FileText size={18} /></div>
-          <div>
-            <div className="stat-value">{total}</div>
-            <div className="stat-label">Total Documents</div>
+      <section className="dashboard-overview" aria-label="Workspace overview">
+        <div className="overview-panel">
+          <div className="overview-copy">
+            <span className="panel-label">Current read</span>
+            <h2>{latestDoc?.filename ?? 'No document selected'}</h2>
+            <p>{latestDoc ? 'Latest upload is ready in the queue. Open completed analyses from the document shelf below.' : 'Start by adding a PDF or screenshot of the terms you want to inspect.'}</p>
+          </div>
+          <div className="overview-mark">
+            <FileText size={22} />
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-green"><CheckCircle2 size={18} /></div>
-          <div>
-            <div className="stat-value">{completed}</div>
-            <div className="stat-label">Analyzed</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-amber"><Clock size={18} /></div>
-          <div>
-            <div className="stat-value">{processing}</div>
-            <div className="stat-label">Processing</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-red"><AlertCircle size={18} /></div>
-          <div>
-            <div className="stat-value">{failed}</div>
-            <div className="stat-label">Failed</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Upload section */}
-      <section className="section">
-        <h2 className="section-title">
-          <LayoutDashboard size={18} />
-          Upload Document
-        </h2>
+        <div className="metrics-strip">
+          {metrics.map(({ label, value, icon: Icon }) => (
+            <div className="metric" key={label}>
+              <div className="metric-top">
+                <Icon size={15} />
+                <span>{label}</span>
+              </div>
+              <strong>{value}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="dashboard-grid">
+        <section className="intake-panel">
+          <div className="section-heading">
+            <div>
+              <span className="panel-label">Intake</span>
+              <h2>Analyze a terms document</h2>
+            </div>
+          </div>
         {uploadError   && <div className="alert alert-error"   style={{ marginBottom: '1rem' }}>{uploadError}</div>}
         {uploadSuccess && <div className="alert alert-success" style={{ marginBottom: '1rem' }}>{uploadSuccess}</div>}
         <DropZone onUpload={handleUpload} uploading={uploading} />
       </section>
 
-      {/* Documents grid */}
-      <section className="section">
-        <h2 className="section-title">
-          <FileText size={18} />
-          Your Documents
-        </h2>
+        <aside className="review-panel">
+          <span className="panel-label">Review rhythm</span>
+          <div className="review-steps">
+            <div className="review-step active">
+              <span>01</span>
+              <div>
+                <strong>Upload</strong>
+                <p>PDF or image, up to 16 MB.</p>
+              </div>
+            </div>
+            <div className="review-step">
+              <span>02</span>
+              <div>
+                <strong>Extract</strong>
+                <p>Clauses, obligations, and risk signals.</p>
+              </div>
+            </div>
+            <div className="review-step">
+              <span>03</span>
+              <div>
+                <strong>Discuss</strong>
+                <p>Ask focused questions against the source.</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section className="documents-panel">
+        <div className="section-heading documents-heading">
+          <div>
+            <span className="panel-label">Library</span>
+            <h2>Documents</h2>
+          </div>
+          {docs.length > 0 && (
+            <button className="quiet-link" onClick={() => navigate('/documents')}>
+              View all
+              <ArrowUpRight size={14} />
+            </button>
+          )}
+        </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+          <div className="loading-state">
             <div className="spinner spinner-lg" />
           </div>
         ) : docs.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><FileText size={26} /></div>
-            <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>No documents yet</div>
-            <div style={{ fontSize: '0.875rem' }}>Upload your first Terms &amp; Conditions document above</div>
+            <div style={{ fontWeight: 650, color: 'var(--text-primary)' }}>No documents yet</div>
+            <div style={{ fontSize: '0.875rem' }}>Your analyzed terms will appear here.</div>
           </div>
         ) : (
           <div className="docs-grid">

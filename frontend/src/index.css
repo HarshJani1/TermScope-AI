@@ -1,6 +1,5 @@
 /* ============================================================
    TermScope — Global Design System
-   Premium dark UI with emerald accent
    ============================================================ */
 
 *, *::before, *::after {
@@ -10,53 +9,55 @@
 }
 
 :root {
-  /* Color Palette */
-  --bg-base:        #080c14;
-  --bg-surface:     #0d1321;
-  --bg-card:        #111827;
-  --bg-card-hover:  #161f30;
-  --bg-elevated:    #1a2438;
-  --bg-glass:       rgba(17, 24, 39, 0.7);
+  --bg-base:        #F8F6F3;
+  --bg-surface:     #FFFFFF;
+  --bg-card:        #FFFFFF;
+  --bg-card-hover:  #FAF9F7;
+  --bg-elevated:    #F1EFEB;
+  --bg-glass:       #FFFFFF;
 
-  --border:         rgba(255, 255, 255, 0.07);
-  --border-accent:  rgba(16, 185, 129, 0.3);
+  --border:         rgba(0, 0, 0, 0.06);
+  --border-strong:  rgba(0, 0, 0, 0.1);
+  --border-accent:  rgba(74, 74, 90, 0.16);
 
-  --accent:         #10b981;
-  --accent-light:   #34d399;
-  --accent-dark:    #059669;
-  --accent-glow:    rgba(16, 185, 129, 0.15);
-  --accent-subtle:  rgba(16, 185, 129, 0.08);
+  --accent:         #4A4A5A;
+  --accent-light:   #4A4A5A;
+  --accent-dark:    #1D1D1F;
+  --accent-glow:    rgba(74, 74, 90, 0.08);
+  --accent-subtle:  rgba(74, 74, 90, 0.07);
+  --success:        #3C7A57;
+  --success-subtle: rgba(60, 122, 87, 0.09);
 
-  --blue:           #3b82f6;
-  --blue-subtle:    rgba(59, 130, 246, 0.1);
-  --purple:         #8b5cf6;
-  --purple-subtle:  rgba(139, 92, 246, 0.1);
-  --amber:          #f59e0b;
-  --amber-subtle:   rgba(245, 158, 11, 0.1);
-  --red:            #ef4444;
-  --red-subtle:     rgba(239, 68, 68, 0.1);
+  --blue:           #4A4A5A;
+  --blue-subtle:    rgba(74, 74, 90, 0.07);
+  --purple:         #4A4A5A;
+  --purple-subtle:  rgba(74, 74, 90, 0.07);
+  --amber:          #6B6B6B;
+  --amber-subtle:   rgba(107, 107, 107, 0.08);
+  --red:            #6B6B6B;
+  --red-subtle:     rgba(107, 107, 107, 0.08);
 
-  --text-primary:   #f0f4ff;
-  --text-secondary: #8896b3;
-  --text-muted:     #4b5e78;
-  --text-accent:    #34d399;
+  --text-primary:   #1D1D1F;
+  --text-secondary: #6B6B6B;
+  --text-muted:     #8A8A8A;
+  --text-accent:    #4A4A5A;
 
   /* Typography */
-  --font-body:      'Inter', system-ui, sans-serif;
-  --font-heading:   'Outfit', system-ui, sans-serif;
+  --font-body:      'Inter', 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-heading:   'Inter', 'Geist', ui-sans-serif, system-ui, sans-serif;
 
   /* Spacing */
   --radius-sm:  6px;
-  --radius:     12px;
-  --radius-lg:  18px;
-  --radius-xl:  24px;
+  --radius:     8px;
+  --radius-lg:  8px;
+  --radius-xl:  8px;
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
-  --shadow:     0 4px 20px rgba(0,0,0,0.5);
-  --shadow-lg:  0 8px 40px rgba(0,0,0,0.6);
-  --shadow-accent: 0 4px 24px rgba(16,185,129,0.2);
+  --shadow-sm:  0 1px 2px rgba(29, 29, 31, 0.04);
+  --shadow:     0 12px 34px rgba(29, 29, 31, 0.06);
+  --shadow-lg:  0 18px 50px rgba(29, 29, 31, 0.08);
+  --shadow-accent: 0 12px 34px rgba(29, 29, 31, 0.08);
 
   /* Transitions */
   --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,11 +78,11 @@ body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-dark); }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
 
 /* Selection */
-::selection { background: var(--accent-dark); color: white; }
+::selection { background: var(--accent); color: white; }
 
 /* ============================================================
    Layout
@@ -97,10 +98,16 @@ body {
   overflow-x: hidden;
 }
 
+@media (max-width: 860px) {
+  .app-layout {
+    flex-direction: column;
+  }
+}
+
 .page-container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.5rem;
 }
 
 /* ============================================================
@@ -131,25 +138,23 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  background: var(--accent-dark);
   color: #fff;
   border-color: var(--accent-dark);
-  box-shadow: var(--shadow-accent);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--accent-light), var(--accent));
-  box-shadow: 0 6px 28px rgba(16,185,129,0.35);
+  background: var(--accent);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   color: var(--text-primary);
   border-color: var(--border);
 }
 .btn-secondary:hover {
   background: var(--bg-card-hover);
-  border-color: var(--border-accent);
+  border-color: var(--border-strong);
   transform: translateY(-1px);
 }
 
@@ -166,11 +171,11 @@ body {
 .btn-danger {
   background: var(--red-subtle);
   color: var(--red);
-  border-color: rgba(239,68,68,0.2);
+  border-color: var(--border);
 }
 .btn-danger:hover {
-  background: var(--red);
-  color: white;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
@@ -206,15 +211,13 @@ body {
 
 .card-hover:hover {
   background: var(--bg-card-hover);
-  border-color: var(--border-accent);
-  box-shadow: var(--shadow-accent);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
 }
 
 .card-glass {
   background: var(--bg-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
@@ -250,7 +253,7 @@ body {
 }
 
 .form-input:hover {
-  border-color: rgba(255,255,255,0.15);
+  border-color: var(--border-strong);
 }
 
 .form-input:focus {
@@ -284,21 +287,21 @@ body {
   font-weight: 500;
 }
 
-.badge-success  { background: rgba(16,185,129,0.12); color: var(--accent-light); border: 1px solid rgba(16,185,129,0.2); }
-.badge-warning  { background: var(--amber-subtle);   color: var(--amber);         border: 1px solid rgba(245,158,11,0.2); }
-.badge-error    { background: var(--red-subtle);     color: var(--red);           border: 1px solid rgba(239,68,68,0.2); }
-.badge-info     { background: var(--blue-subtle);    color: var(--blue);          border: 1px solid rgba(59,130,246,0.2); }
-.badge-purple   { background: var(--purple-subtle);  color: var(--purple);        border: 1px solid rgba(139,92,246,0.2); }
+.badge-success  { background: var(--success-subtle); color: var(--success); border: 1px solid rgba(60, 122, 87, 0.16); }
+.badge-warning  { background: var(--amber-subtle);   color: var(--amber);         border: 1px solid var(--border); }
+.badge-error    { background: var(--red-subtle);     color: var(--red);           border: 1px solid var(--border); }
+.badge-info     { background: var(--blue-subtle);    color: var(--blue);          border: 1px solid var(--border); }
+.badge-purple   { background: var(--purple-subtle);  color: var(--purple);        border: 1px solid var(--border); }
 .badge-neutral  { background: var(--bg-elevated);    color: var(--text-secondary);border: 1px solid var(--border); }
 
 /* ============================================================
    Status-specific badge mapping
    ============================================================ */
-.status-uploaded   { background: var(--blue-subtle);  color: var(--blue);          border: 1px solid rgba(59,130,246,0.2); }
+.status-uploaded   { background: var(--blue-subtle);  color: var(--blue);          border: 1px solid var(--border); }
 .status-processing, .status-extracting, .status-cleaning, .status-indexing, .status-analyzing {
-                     background: var(--amber-subtle);  color: var(--amber);         border: 1px solid rgba(245,158,11,0.2); }
-.status-completed  { background: rgba(16,185,129,0.12); color: var(--accent-light); border: 1px solid rgba(16,185,129,0.2); }
-.status-failed     { background: var(--red-subtle);    color: var(--red);           border: 1px solid rgba(239,68,68,0.2); }
+                     background: var(--amber-subtle);  color: var(--amber);         border: 1px solid var(--border); }
+.status-completed  { background: var(--success-subtle); color: var(--success); border: 1px solid rgba(60, 122, 87, 0.16); }
+.status-failed     { background: var(--red-subtle);    color: var(--red);           border: 1px solid var(--border); }
 
 /* ============================================================
    Spinner / Loader
@@ -306,7 +309,7 @@ body {
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255,255,255,0.1);
+  border: 2px solid rgba(0,0,0,0.08);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -350,12 +353,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, var(--accent-light), #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.gradient-text { color: var(--text-primary); }
 
 .text-secondary { color: var(--text-secondary); }
 .text-muted     { color: var(--text-muted); }
@@ -375,8 +373,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .page-title {
   font-family: var(--font-heading);
-  font-size: 1.875rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: 0;
 }
 
 .page-subtitle {
@@ -425,9 +424,9 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid transparent;
 }
 
-.alert-error   { background: var(--red-subtle);   color: #fca5a5; border-color: rgba(239,68,68,0.25); }
-.alert-success { background: var(--accent-subtle); color: var(--accent-light); border-color: var(--border-accent); }
-.alert-info    { background: var(--blue-subtle);   color: #93c5fd; border-color: rgba(59,130,246,0.25); }
+.alert-error   { background: var(--red-subtle); color: var(--text-primary); border-color: var(--border); }
+.alert-success { background: var(--success-subtle); color: var(--success); border-color: rgba(60, 122, 87, 0.16); }
+.alert-info    { background: var(--blue-subtle);   color: var(--accent); border-color: var(--border-accent); }
 
 /* ============================================================
    Progress bar
@@ -441,7 +440,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-dark), var(--accent-light));
+  background: var(--accent);
   border-radius: var(--radius-full);
   transition: width var(--transition-slow);
 }

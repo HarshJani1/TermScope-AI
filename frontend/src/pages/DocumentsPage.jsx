@@ -9,7 +9,7 @@ const STATUS_FILTERS = ['all', 'completed', 'processing', 'failed']
 
 export default function DocumentsPage() {
   const navigate = useNavigate()
-  const [docs, setDocs]     = useState([])
+  const [docs, setDocs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
@@ -18,7 +18,7 @@ export default function DocumentsPage() {
     try {
       const res = await listDocuments()
       setDocs(res.data.documents)
-    } catch {/* silent */}
+    } catch {/* silent */ }
     finally { setLoading(false) }
   }, [])
 
@@ -26,7 +26,7 @@ export default function DocumentsPage() {
     fetchDocs()
     const id = setInterval(() => {
       setDocs((prev) => {
-        const has = prev.some((d) => !['completed','failed'].includes(d.status))
+        const has = prev.some((d) => !['completed', 'failed'].includes(d.status))
         if (has) fetchDocs()
         return prev
       })
@@ -39,12 +39,12 @@ export default function DocumentsPage() {
     try {
       await deleteDocument(id)
       setDocs((prev) => prev.filter((d) => d.id !== id))
-    } catch {/* silent */}
+    } catch {/* silent */ }
   }
 
   const filtered = docs
     .filter((d) => filter === 'all' || d.status === filter ||
-      (['processing','extracting','cleaning','indexing','analyzing'].includes(d.status) && filter === 'processing'))
+      (['processing', 'extracting', 'cleaning', 'indexing', 'analyzing'].includes(d.status) && filter === 'processing'))
     .filter((d) => !search || d.filename.toLowerCase().includes(search.toLowerCase()))
 
   return (
@@ -71,7 +71,7 @@ export default function DocumentsPage() {
           <Search size={15} className="search-icon" />
           <input
             className="form-input search-input"
-            placeholder="Search documents…"
+            placeholder="      Search documents…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

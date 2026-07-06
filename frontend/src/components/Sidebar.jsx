@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { logout } from '../api/client'
 import {
   LayoutDashboard, FileText, MessageSquare, LogOut,
-  ShieldCheck, ChevronRight
+  ShieldCheck
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -36,7 +36,7 @@ export default function Sidebar() {
         </div>
         <div>
           <div className="logo-title">TermScope</div>
-          <div className="logo-sub">AI Document Analyst</div>
+          <div className="logo-sub">Terms intelligence</div>
         </div>
       </div>
 
@@ -52,7 +52,6 @@ export default function Sidebar() {
           >
             <Icon size={18} />
             <span>{label}</span>
-            <ChevronRight size={14} className="sidebar-link-arrow" />
           </NavLink>
         ))}
       </nav>
