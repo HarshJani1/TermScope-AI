@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+        timestamps()
+    }
+
     environment {
         FLASK_ENV = 'testing'
         PYTHONUNBUFFERED = '1'
@@ -11,6 +16,12 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Docker Preflight') {
+            steps {
+                sh 'docker info'
             }
         }
 
