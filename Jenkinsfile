@@ -1,16 +1,14 @@
 pipeline {
-    agent any
-
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+    agent {
+        docker {
+            image 'username/termscope-ci-common:latest'
+            reuseNode true
+        }
     }
 
     environment {
         FLASK_ENV = 'testing'
         PYTHONUNBUFFERED = '1'
-        PIP_DISABLE_PIP_VERSION_CHECK = '1'
     }
 
     stages {
@@ -20,37 +18,18 @@ pipeline {
             }
         }
 
-        stage('Backend Dependencies') {
-            steps {
-                dir('backend') {
-                    sh '''
-                        python3 -m venv .venv
-                        . .venv/bin/activate
-                        python -m pip install --upgrade pip
-                        pip install -r requirements.txt
-                    '''
-                }
-            }
-        }
+        // --- BACKEND DEPENDENCIES STAGE REMOVED ---
 
         stage('Backend Tests') {
             steps {
                 dir('backend') {
-                    sh '''
-                        . .venv/bin/activate
-                        pytest
-                    '''
+                    // No virtual environment or pip install needed anymore!
+                    sh 'pytest'
                 }
             }
         }
 
-        stage('Frontend Dependencies') {
-            steps {
-                dir('frontend') {
-                    sh 'npm ci'
-                }
-            }
-        }
+        // --- FRONTEND DEPENDENCIES STAGE REMOVED ---
 
         stage('Frontend Lint') {
             steps {
@@ -66,12 +45,6 @@ pipeline {
                     sh 'npm run build'
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true
         }
     }
 }

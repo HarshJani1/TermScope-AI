@@ -1,0 +1,32 @@
+# Use a slim python image as the base
+FROM python:3.11-slim
+
+# Install system dependencies
+# - build-essential: for potential compilation of C extensions
+# - libgomp1: required by FAISS
+# - tesseract-ocr: required by pytesseract
+# - curl, gnupg: required to setup NodeSource repo for Node.js
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgomp1 \
+    tesseract-ocr \
+    curl \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (LTS version 20)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# 1. Install Backend Dependencies
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r backend/requirements.txt
+
+# 2. Install Frontend Dependencies
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm ci
