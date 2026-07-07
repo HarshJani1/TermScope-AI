@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'username/termscope-ci-common:latest'
+            image 'harsh1jani/termscope-ci-common:latest'
             reuseNode true
         }
     }
