@@ -10,6 +10,7 @@ pipeline {
         FLASK_ENV = 'testing'
         PYTHONUNBUFFERED = '1'
         CI_IMAGE = 'harsh1jani/termscope-ci-common:latest'
+        CI_PLATFORM = 'linux/amd64'
     }
 
     stages {
@@ -27,7 +28,7 @@ pipeline {
 
         stage('Pull CI Image') {
             steps {
-                sh 'docker pull "$CI_IMAGE"'
+                sh 'docker pull --platform "$CI_PLATFORM" "$CI_IMAGE"'
             }
         }
 
@@ -35,6 +36,7 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
+                        --platform "$CI_PLATFORM" \
                         -e FLASK_ENV="$FLASK_ENV" \
                         -e PYTHONUNBUFFERED="$PYTHONUNBUFFERED" \
                         -v "$WORKSPACE:/workspace" \
@@ -49,10 +51,11 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
+                        --platform "$CI_PLATFORM" \
                         -v "$WORKSPACE:/workspace" \
                         -w /workspace/frontend \
                         "$CI_IMAGE" \
-                        sh -lc 'npm run lint'
+                        sh -lc 'npm ci && npm run lint'
                 '''
             }
         }
@@ -61,10 +64,11 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
+                        --platform "$CI_PLATFORM" \
                         -v "$WORKSPACE:/workspace" \
                         -w /workspace/frontend \
                         "$CI_IMAGE" \
-                        sh -lc 'npm run build'
+                        sh -lc 'npm ci && npm run build'
                 '''
             }
         }
