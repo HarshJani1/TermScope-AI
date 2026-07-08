@@ -33,20 +33,24 @@ pipeline {
         }
 
         stage('Backend Tests') {
-            steps {
-                sh '''
-                    docker run --rm \
-                        --platform "$CI_PLATFORM" \
-                        -e FLASK_ENV="$FLASK_ENV" \
-                        -e PYTHONUNBUFFERED="$PYTHONUNBUFFERED" \
-                        -v "$WORKSPACE:/workspace" \
-                        -w /workspace/backend \
-                        "$CI_IMAGE" \
-                        sh -lc 'pytest'
-                '''
-            }
+    steps {
+        withCredentials([
+            string(credentialsId: 'groq-api-key', variable: 'GROQ_API_KEY')
+        ]) {
+            sh '''
+                docker run --rm \
+                    --platform "$CI_PLATFORM" \
+                    -e FLASK_ENV="$FLASK_ENV" \
+                    -e PYTHONUNBUFFERED="$PYTHONUNBUFFERED" \
+                    -e GROQ_API_KEY="$GROQ_API_KEY" \
+                    -v "$WORKSPACE:/workspace" \
+                    -w /workspace/backend \
+                    "$CI_IMAGE" \
+                    sh -lc 'pytest'
+            '''
         }
-
+    }
+}
         stage('Frontend Lint') {
             steps {
                 sh '''
