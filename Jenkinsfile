@@ -92,6 +92,8 @@ pipeline {
                     echo "Creating deployment directory at $DEPLOY_DIR ..."
                     mkdir -p "$DEPLOY_DIR/backend"
                     mkdir -p "$DEPLOY_DIR/frontend"
+                    mkdir -p "$DEPLOY_DIR/cache/huggingface"
+                    mkdir -p "$DEPLOY_DIR/cache/torch"
                 '''
             }
         }
@@ -168,6 +170,8 @@ pipeline {
                             --restart unless-stopped \
                             -v "$DEPLOY_DIR/backend:/workspace/backend" \
                             -v "$DEPLOY_DIR/frontend:/workspace/frontend" \
+                            -v "$DEPLOY_DIR/cache/huggingface:/root/.cache/huggingface" \
+                            -v "$DEPLOY_DIR/cache/torch:/root/.cache/torch" \
                             -w /workspace/backend \
                             -e FLASK_ENV=production \
                             -e DB_HOST=localhost \
@@ -205,18 +209,18 @@ pipeline {
             steps {
                 sh '''
                     echo "Running health check ..."
-                    for i in 1 2 3 4 5; do
+                    for i in {1..20}; do
                         HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5010/api/health || true)
                         if [ "$HTTP_CODE" = "200" ]; then
                             echo "Backend health check PASSED (HTTP $HTTP_CODE)"
                             break
                         fi
-                        echo "Attempt $i: HTTP $HTTP_CODE — retrying in 3s ..."
-                        sleep 3
+                        echo "Attempt $i: HTTP $HTTP_CODE — retrying in 4s ..."
+                        sleep 4
                     done
 
                     if [ "$HTTP_CODE" != "200" ]; then
-                        echo "ERROR: Backend health check FAILED after 5 attempts"
+                        echo "ERROR: Backend health check FAILED after 20 attempts"
                         echo "── Backend Container Logs ──"
                         docker logs termscope-backend || true
                         exit 1
