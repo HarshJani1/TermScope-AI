@@ -26,7 +26,7 @@ export default function SignupPage() {
 
     setLoading(true)
     try {
-      const res = await signup({
+      await signup({
         username: form.username,
         email: form.email,
         password: form.password,

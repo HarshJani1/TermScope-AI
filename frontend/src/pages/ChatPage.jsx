@@ -6,7 +6,7 @@ import { getDocument, getTranscript, askQuestion } from '../api/client'
 import StatusBadge from '../components/StatusBadge'
 import {
   ArrowLeft, Send, Copy, Download, Bot, User,
-  FileText, Clock, CheckCircle2, RefreshCw
+  FileText, Clock, CheckCircle2
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import './ChatPage.css'
@@ -151,7 +151,6 @@ export default function ChatPage() {
   }
 
   const chatMessages = messages.filter((m) => m.role !== 'system')
-  const analysisMsg  = messages.find((m) => m.role === 'assistant')
 
   return (
     <div className="chat-layout fade-in">
