@@ -5,7 +5,7 @@ AI-powered Terms & Conditions analysis platform.
 
 import os
 import logging
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     """Application factory — creates and configures the Flask app."""
-    app = Flask(__name__)
+    # Serve static files from the frontend build directory if it exists
+    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
+    app = Flask(__name__, static_folder=frontend_dist, static_url_path="")
 
     # Load configuration
     config = get_config()
@@ -139,6 +141,21 @@ def create_app():
     @app.errorhandler(500)
     def internal_error(e):
         return jsonify({"error": "Internal server error"}), 500
+
+    # Catch-all route to serve the React frontend index.html for any SPA routes,
+    # but avoid intercepting /api/ routes which should 404/error properly if not matched.
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        if path.startswith("api/"):
+            return jsonify({"error": "Endpoint not found"}), 404
+        
+        # Check if the requested file exists in static folder (e.g. assets, favicon)
+        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        
+        # Otherwise serve index.html for client side routing
+        return send_from_directory(app.static_folder, 'index.html')
 
     logger.info("TermScope API initialized successfully")
     return app

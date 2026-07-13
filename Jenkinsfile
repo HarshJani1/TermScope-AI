@@ -159,14 +159,15 @@ pipeline {
                     string(credentialsId: 'groq-api-key', variable: 'GROQ_API_KEY')
                 ]) {
                     sh '''
-                        echo "Starting TermScope services inside Docker containers ..."
+                        echo "Starting TermScope service inside Docker container ..."
 
-                        # ── Start Backend Container ──
+                        # ── Start Backend Container (serving frontend static files too) ──
                         docker run -d \
                             --name termscope-backend \
                             --network host \
                             --restart unless-stopped \
                             -v "$DEPLOY_DIR/backend:/workspace/backend" \
+                            -v "$DEPLOY_DIR/frontend:/workspace/frontend" \
                             -w /workspace/backend \
                             -e FLASK_ENV=production \
                             -e DB_HOST=localhost \
@@ -189,22 +190,12 @@ pipeline {
                             "$CI_IMAGE" \
                             python app.py
 
-                        # ── Start Frontend Container ──
-                        docker run -d \
-                            --name termscope-frontend \
-                            --network host \
-                            --restart unless-stopped \
-                            -v "$DEPLOY_DIR/frontend:/workspace/frontend" \
-                            -w /workspace/frontend \
-                            "$CI_IMAGE" \
-                            python3 -m http.server 5173
-
                         # Wait for processes to stabilise
                         sleep 5
 
-                        # Verify containers are running
+                        # Verify container is running
                         echo "── Process Status ──"
-                        docker ps --filter "name=termscope-"
+                        docker ps --filter "name=termscope-backend"
                     '''
                 }
             }
@@ -234,8 +225,7 @@ pipeline {
                     echo ""
                     echo "==========================================="
                     echo "  Deployment completed successfully!"
-                    echo "  Backend  → http://localhost:5010"
-                    echo "  Frontend → http://localhost:5173"
+                    echo "  TermScope App → http://localhost:5010"
                     echo "==========================================="
                 '''
             }
