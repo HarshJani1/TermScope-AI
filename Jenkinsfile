@@ -11,7 +11,7 @@ pipeline {
         PYTHONUNBUFFERED = '1'
         CI_IMAGE = 'harsh1jani/termscope-ci-common:latest'
         CI_PLATFORM = 'linux/amd64'
-        DEPLOY_DIR = '/opt/TermScope'
+        DEPLOY_DIR = "${HOME}/TermScope"
         DB_USER = 'root'
         DB_PASSWORD = 'Password'
         DB_NAME = 'termscope'
@@ -90,9 +90,45 @@ pipeline {
             steps {
                 sh '''
                     echo "Creating deployment directory at $DEPLOY_DIR ..."
-                    sudo mkdir -p "$DEPLOY_DIR/backend"
-                    sudo mkdir -p "$DEPLOY_DIR/frontend"
-                    sudo chown -R $(whoami):$(whoami) "$DEPLOY_DIR"
+                    mkdir -p "$DEPLOY_DIR/backend"
+                    mkdir -p "$DEPLOY_DIR/frontend"
+                    mkdir -p "$DEPLOY_DIR/pids"
+                    mkdir -p "$DEPLOY_DIR/logs"
+                '''
+            }
+        }
+
+        stage('Stop Running Services') {
+            steps {
+                sh '''
+                    echo "Stopping any running TermScope services ..."
+
+                    # Stop backend if running
+                    if [ -f "$DEPLOY_DIR/pids/backend.pid" ]; then
+                        PID=$(cat "$DEPLOY_DIR/pids/backend.pid")
+                        if kill -0 "$PID" 2>/dev/null; then
+                            echo "Stopping backend (PID $PID) ..."
+                            kill "$PID" || true
+                            sleep 2
+                            # Force kill if still running
+                            kill -0 "$PID" 2>/dev/null && kill -9 "$PID" || true
+                        fi
+                        rm -f "$DEPLOY_DIR/pids/backend.pid"
+                    fi
+
+                    # Stop frontend if running
+                    if [ -f "$DEPLOY_DIR/pids/frontend.pid" ]; then
+                        PID=$(cat "$DEPLOY_DIR/pids/frontend.pid")
+                        if kill -0 "$PID" 2>/dev/null; then
+                            echo "Stopping frontend (PID $PID) ..."
+                            kill "$PID" || true
+                            sleep 2
+                            kill -0 "$PID" 2>/dev/null && kill -9 "$PID" || true
+                        fi
+                        rm -f "$DEPLOY_DIR/pids/frontend.pid"
+                    fi
+
+                    echo "Services stopped."
                 '''
             }
         }
@@ -198,73 +234,48 @@ EOF
             }
         }
 
-        stage('Create Systemd Services') {
-            steps {
-                sh '''
-                    echo "Setting up systemd service for backend ..."
-
-                    # ── Backend service ──
-                    sudo tee /etc/systemd/system/termscope-backend.service > /dev/null <<EOF
-[Unit]
-Description=TermScope Flask Backend
-After=network.target mysql.service redis.service
-
-[Service]
-Type=simple
-User=$(whoami)
-WorkingDirectory=$DEPLOY_DIR/backend
-EnvironmentFile=$DEPLOY_DIR/backend/.env
-ExecStart=$DEPLOY_DIR/backend/.venv/bin/python app.py
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-                    # ── Frontend static file server ──
-                    sudo tee /etc/systemd/system/termscope-frontend.service > /dev/null <<EOF
-[Unit]
-Description=TermScope Frontend (static file server)
-After=network.target
-
-[Service]
-Type=simple
-User=$(whoami)
-WorkingDirectory=$DEPLOY_DIR/frontend
-ExecStart=/usr/bin/python3 -m http.server 5173
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-                    sudo systemctl daemon-reload
-                    echo "Systemd services created."
-                '''
-            }
-        }
-
         stage('Start Services') {
             steps {
                 sh '''
                     echo "Starting TermScope services ..."
 
-                    # Restart (or start) backend
-                    sudo systemctl enable termscope-backend.service
-                    sudo systemctl restart termscope-backend.service
+                    # ── Start Backend ──
+                    cd "$DEPLOY_DIR/backend"
+                    nohup "$DEPLOY_DIR/backend/.venv/bin/python" app.py \
+                        > "$DEPLOY_DIR/logs/backend.log" 2>&1 &
+                    echo $! > "$DEPLOY_DIR/pids/backend.pid"
+                    echo "Backend started (PID $(cat "$DEPLOY_DIR/pids/backend.pid"))"
 
-                    # Restart (or start) frontend
-                    sudo systemctl enable termscope-frontend.service
-                    sudo systemctl restart termscope-frontend.service
+                    # ── Start Frontend ──
+                    cd "$DEPLOY_DIR/frontend"
+                    nohup python3 -m http.server 5173 \
+                        > "$DEPLOY_DIR/logs/frontend.log" 2>&1 &
+                    echo $! > "$DEPLOY_DIR/pids/frontend.pid"
+                    echo "Frontend started (PID $(cat "$DEPLOY_DIR/pids/frontend.pid"))"
 
-                    # Wait a few seconds for processes to stabilise
+                    # Wait for processes to stabilise
                     sleep 5
 
-                    echo "── Service Status ──"
-                    sudo systemctl status termscope-backend.service --no-pager || true
-                    sudo systemctl status termscope-frontend.service --no-pager || true
+                    # Verify processes are running
+                    echo "── Process Status ──"
+                    BACKEND_PID=$(cat "$DEPLOY_DIR/pids/backend.pid")
+                    FRONTEND_PID=$(cat "$DEPLOY_DIR/pids/frontend.pid")
+
+                    if kill -0 "$BACKEND_PID" 2>/dev/null; then
+                        echo "Backend  : RUNNING (PID $BACKEND_PID)"
+                    else
+                        echo "Backend  : FAILED — check $DEPLOY_DIR/logs/backend.log"
+                        cat "$DEPLOY_DIR/logs/backend.log"
+                        exit 1
+                    fi
+
+                    if kill -0 "$FRONTEND_PID" 2>/dev/null; then
+                        echo "Frontend : RUNNING (PID $FRONTEND_PID)"
+                    else
+                        echo "Frontend : FAILED — check $DEPLOY_DIR/logs/frontend.log"
+                        cat "$DEPLOY_DIR/logs/frontend.log"
+                        exit 1
+                    fi
                 '''
             }
         }
@@ -285,12 +296,17 @@ EOF
 
                     if [ "$HTTP_CODE" != "200" ]; then
                         echo "ERROR: Backend health check FAILED after 5 attempts"
+                        echo "── Backend Log ──"
+                        cat "$DEPLOY_DIR/logs/backend.log" || true
                         exit 1
                     fi
 
-                    echo "Deployment completed successfully!"
+                    echo ""
+                    echo "==========================================="
+                    echo "  Deployment completed successfully!"
                     echo "  Backend  → http://localhost:5010"
                     echo "  Frontend → http://localhost:5173"
+                    echo "==========================================="
                 '''
             }
         }
@@ -306,3 +322,4 @@ EOF
         }
     }
 }
+
