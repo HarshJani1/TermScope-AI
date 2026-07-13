@@ -92,8 +92,6 @@ pipeline {
                     echo "Creating deployment directory at $DEPLOY_DIR ..."
                     mkdir -p "$DEPLOY_DIR/backend"
                     mkdir -p "$DEPLOY_DIR/frontend"
-                    mkdir -p "$DEPLOY_DIR/pids"
-                    mkdir -p "$DEPLOY_DIR/logs"
                 '''
             }
         }
@@ -101,124 +99,45 @@ pipeline {
         stage('Stop Running Services') {
             steps {
                 sh '''
-                    echo "Stopping any running TermScope services ..."
-
-                    # Stop backend if running
-                    if [ -f "$DEPLOY_DIR/pids/backend.pid" ]; then
-                        PID=$(cat "$DEPLOY_DIR/pids/backend.pid")
-                        if kill -0 "$PID" 2>/dev/null; then
-                            echo "Stopping backend (PID $PID) ..."
-                            kill "$PID" || true
-                            sleep 2
-                            # Force kill if still running
-                            kill -0 "$PID" 2>/dev/null && kill -9 "$PID" || true
-                        fi
-                        rm -f "$DEPLOY_DIR/pids/backend.pid"
-                    fi
-
-                    # Stop frontend if running
-                    if [ -f "$DEPLOY_DIR/pids/frontend.pid" ]; then
-                        PID=$(cat "$DEPLOY_DIR/pids/frontend.pid")
-                        if kill -0 "$PID" 2>/dev/null; then
-                            echo "Stopping frontend (PID $PID) ..."
-                            kill "$PID" || true
-                            sleep 2
-                            kill -0 "$PID" 2>/dev/null && kill -9 "$PID" || true
-                        fi
-                        rm -f "$DEPLOY_DIR/pids/frontend.pid"
-                    fi
-
-                    echo "Services stopped."
+                    echo "Stopping any running TermScope docker containers ..."
+                    docker rm -f termscope-backend || true
+                    docker rm -f termscope-frontend || true
                 '''
             }
         }
 
         stage('Deploy Backend') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'groq-api-key', variable: 'GROQ_API_KEY')
-                ]) {
-                    sh '''
-                        echo "Deploying backend ..."
+                sh '''
+                    echo "Deploying backend ..."
 
-                        # Copy backend source to deploy directory
-                        rsync -a --delete \
-                            --exclude='.venv' \
-                            --exclude='__pycache__' \
-                            --exclude='.pytest_cache' \
-                            --exclude='.env' \
-                            "$WORKSPACE/backend/" "$DEPLOY_DIR/backend/"
+                    # Copy backend source to deploy directory
+                    rsync -a --delete \
+                        --exclude='.venv' \
+                        --exclude='__pycache__' \
+                        --exclude='.pytest_cache' \
+                        --exclude='.env' \
+                        "$WORKSPACE/backend/" "$DEPLOY_DIR/backend/"
 
-                        # Create Python virtual environment if it does not exist
-                        if [ ! -d "$DEPLOY_DIR/backend/.venv" ]; then
-                            echo "Creating Python virtual environment ..."
-                            python3 -m venv "$DEPLOY_DIR/backend/.venv"
-                        fi
-
-                        # Install / update dependencies
-                        echo "Installing backend dependencies ..."
-                        . "$DEPLOY_DIR/backend/.venv/bin/activate"
-                        pip install --upgrade pip -q
-                        pip install torch --index-url https://download.pytorch.org/whl/cpu -q
-                        pip install -r "$DEPLOY_DIR/backend/requirements.txt" -q
-                        deactivate
-
-                        # Write production .env file
-                        cat > "$DEPLOY_DIR/backend/.env" <<EOF
-# TermScope Production Environment — managed by Jenkins
-FLASK_ENV=production
-SECRET_KEY=$(openssl rand -hex 32)
-
-# MySQL
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=$DB_USER
-DB_PASSWORD=$DB_PASSWORD
-DB_NAME=$DB_NAME
-
-# JWT
-JWT_SECRET_KEY=$(openssl rand -hex 32)
-JWT_EXPIRY_HOURS=24
-
-# Groq LLM
-GROQ_API_KEY=$GROQ_API_KEY
-LLM_MODEL=openai/gpt-oss-120b
-LLM_MAX_TOKENS=4096
-LLM_TEMPERATURE=0.3
-
-# File Upload
-MAX_FILE_SIZE_MB=16
-
-# Embeddings
-EMBEDDING_MODEL=all-MiniLM-L6-v2
-
-# Text Chunking
-CHUNK_SIZE=1000
-CHUNK_OVERLAP=200
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_URL=redis://localhost:6379/0
-
-# Rate Limiting
-RATE_LIMIT_CAPACITY=10
-RATE_LIMIT_REFILL_RATE=1.0
-EOF
-
-                        echo "Backend deployed to $DEPLOY_DIR/backend"
-                    '''
-                }
+                    echo "Backend source deployed to $DEPLOY_DIR/backend"
+                '''
             }
         }
 
         stage('Setup Database') {
             steps {
                 sh '''
-                    echo "Creating MySQL database if not exists ..."
-                    mysql -u "$DB_USER" -p"$DB_PASSWORD" -e \
-                        "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-                    echo "Database '$DB_NAME' is ready."
+                    echo "Creating MySQL database if not exists using docker container..."
+                    docker run --rm \
+                        --network host \
+                        -v "$DEPLOY_DIR/backend:/workspace/backend" \
+                        -w /workspace/backend \
+                        -e DB_HOST=localhost \
+                        -e DB_USER="$DB_USER" \
+                        -e DB_PASSWORD="$DB_PASSWORD" \
+                        -e DB_NAME="$DB_NAME" \
+                        "$CI_IMAGE" \
+                        python create_db.py
                 '''
             }
         }
@@ -236,47 +155,58 @@ EOF
 
         stage('Start Services') {
             steps {
-                sh '''
-                    echo "Starting TermScope services ..."
+                withCredentials([
+                    string(credentialsId: 'groq-api-key', variable: 'GROQ_API_KEY')
+                ]) {
+                    sh '''
+                        echo "Starting TermScope services inside Docker containers ..."
 
-                    # ── Start Backend ──
-                    cd "$DEPLOY_DIR/backend"
-                    nohup "$DEPLOY_DIR/backend/.venv/bin/python" app.py \
-                        > "$DEPLOY_DIR/logs/backend.log" 2>&1 &
-                    echo $! > "$DEPLOY_DIR/pids/backend.pid"
-                    echo "Backend started (PID $(cat "$DEPLOY_DIR/pids/backend.pid"))"
+                        # ── Start Backend Container ──
+                        docker run -d \
+                            --name termscope-backend \
+                            --network host \
+                            --restart unless-stopped \
+                            -v "$DEPLOY_DIR/backend:/workspace/backend" \
+                            -w /workspace/backend \
+                            -e FLASK_ENV=production \
+                            -e DB_HOST=localhost \
+                            -e DB_USER="$DB_USER" \
+                            -e DB_PASSWORD="$DB_PASSWORD" \
+                            -e DB_NAME="$DB_NAME" \
+                            -e GROQ_API_KEY="$GROQ_API_KEY" \
+                            -e SECRET_KEY="$(openssl rand -hex 32)" \
+                            -e JWT_SECRET_KEY="$(openssl rand -hex 32)" \
+                            -e JWT_EXPIRY_HOURS=24 \
+                            -e MAX_FILE_SIZE_MB=16 \
+                            -e EMBEDDING_MODEL=all-MiniLM-L6-v2 \
+                            -e CHUNK_SIZE=1000 \
+                            -e CHUNK_OVERLAP=200 \
+                            -e REDIS_HOST=localhost \
+                            -e REDIS_PORT=6379 \
+                            -e REDIS_URL=redis://localhost:6379/0 \
+                            -e RATE_LIMIT_CAPACITY=10 \
+                            -e RATE_LIMIT_REFILL_RATE=1.0 \
+                            "$CI_IMAGE" \
+                            python app.py
 
-                    # ── Start Frontend ──
-                    cd "$DEPLOY_DIR/frontend"
-                    nohup python3 -m http.server 5173 \
-                        > "$DEPLOY_DIR/logs/frontend.log" 2>&1 &
-                    echo $! > "$DEPLOY_DIR/pids/frontend.pid"
-                    echo "Frontend started (PID $(cat "$DEPLOY_DIR/pids/frontend.pid"))"
+                        # ── Start Frontend Container ──
+                        docker run -d \
+                            --name termscope-frontend \
+                            --network host \
+                            --restart unless-stopped \
+                            -v "$DEPLOY_DIR/frontend:/workspace/frontend" \
+                            -w /workspace/frontend \
+                            "$CI_IMAGE" \
+                            python3 -m http.server 5173
 
-                    # Wait for processes to stabilise
-                    sleep 5
+                        # Wait for processes to stabilise
+                        sleep 5
 
-                    # Verify processes are running
-                    echo "── Process Status ──"
-                    BACKEND_PID=$(cat "$DEPLOY_DIR/pids/backend.pid")
-                    FRONTEND_PID=$(cat "$DEPLOY_DIR/pids/frontend.pid")
-
-                    if kill -0 "$BACKEND_PID" 2>/dev/null; then
-                        echo "Backend  : RUNNING (PID $BACKEND_PID)"
-                    else
-                        echo "Backend  : FAILED — check $DEPLOY_DIR/logs/backend.log"
-                        cat "$DEPLOY_DIR/logs/backend.log"
-                        exit 1
-                    fi
-
-                    if kill -0 "$FRONTEND_PID" 2>/dev/null; then
-                        echo "Frontend : RUNNING (PID $FRONTEND_PID)"
-                    else
-                        echo "Frontend : FAILED — check $DEPLOY_DIR/logs/frontend.log"
-                        cat "$DEPLOY_DIR/logs/frontend.log"
-                        exit 1
-                    fi
-                '''
+                        # Verify containers are running
+                        echo "── Process Status ──"
+                        docker ps --filter "name=termscope-"
+                    '''
+                }
             }
         }
 
@@ -296,8 +226,8 @@ EOF
 
                     if [ "$HTTP_CODE" != "200" ]; then
                         echo "ERROR: Backend health check FAILED after 5 attempts"
-                        echo "── Backend Log ──"
-                        cat "$DEPLOY_DIR/logs/backend.log" || true
+                        echo "── Backend Container Logs ──"
+                        docker logs termscope-backend || true
                         exit 1
                     fi
 
