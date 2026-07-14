@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { signup } from '../api/client'
-import { ShieldCheck, Eye, EyeOff, User, Mail, Lock, ArrowRight } from 'lucide-react'
 import './Auth.css'
 
 export default function SignupPage() {
@@ -54,7 +53,7 @@ export default function SignupPage() {
         {/* Brand */}
         <div className="auth-brand">
           <div className="auth-logo">
-            <ShieldCheck size={24} />
+            TS
           </div>
           <div>
             <div className="auth-logo-title">TermScope</div>
@@ -71,10 +70,9 @@ export default function SignupPage() {
           <div className="form-group">
             <label className="form-label">Username</label>
             <div className="input-icon-wrap">
-              <User size={15} className="input-icon" />
               <input
                 id="signup-username"
-                className="form-input input-with-icon"
+                className="form-input"
                 placeholder="johndoe"
                 value={form.username}
                 onChange={set('username')}
@@ -87,11 +85,10 @@ export default function SignupPage() {
           <div className="form-group">
             <label className="form-label">Email</label>
             <div className="input-icon-wrap">
-              <Mail size={15} className="input-icon" />
               <input
                 id="signup-email"
                 type="email"
-                className="form-input input-with-icon"
+                className="form-input"
                 placeholder="john@example.com"
                 value={form.email}
                 onChange={set('email')}
@@ -103,11 +100,10 @@ export default function SignupPage() {
           <div className="form-group">
             <label className="form-label">Password</label>
             <div className="input-icon-wrap">
-              <Lock size={15} className="input-icon" />
               <input
                 id="signup-password"
                 type={showPw ? 'text' : 'password'}
-                className="form-input input-with-icon input-with-toggle"
+                className="form-input input-with-toggle"
                 placeholder="Min. 6 characters"
                 value={form.password}
                 onChange={set('password')}
@@ -119,7 +115,7 @@ export default function SignupPage() {
                 className="input-toggle"
                 onClick={() => setShowPw((s) => !s)}
               >
-                {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                {showPw ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
@@ -127,11 +123,10 @@ export default function SignupPage() {
           <div className="form-group">
             <label className="form-label">Confirm Password</label>
             <div className="input-icon-wrap">
-              <Lock size={15} className="input-icon" />
               <input
                 id="signup-confirm"
                 type={showPw ? 'text' : 'password'}
-                className="form-input input-with-icon"
+                className="form-input"
                 placeholder="Repeat password"
                 value={form.confirm}
                 onChange={set('confirm')}
@@ -146,7 +141,7 @@ export default function SignupPage() {
             className="btn btn-primary btn-lg auth-submit"
             disabled={loading}
           >
-            {loading ? <><div className="spinner" />Creating account…</> : <>Create Account <ArrowRight size={16} /></>}
+            {loading ? <><div className="spinner" />Creating account…</> : 'Create Account'}
           </button>
         </form>
 

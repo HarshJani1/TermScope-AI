@@ -23,9 +23,8 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     """Application factory — creates and configures the Flask app."""
-    # Serve static files from the frontend build directory if it exists
     frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
-    app = Flask(__name__, static_folder=frontend_dist, static_url_path="")
+    app = Flask(__name__)
 
     # Load configuration
     config = get_config()
@@ -150,12 +149,13 @@ def create_app():
         if path.startswith("api/"):
             return jsonify({"error": "Endpoint not found"}), 404
         
-        # Check if the requested file exists in static folder (e.g. assets, favicon)
-        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
+        # Check if the requested file exists in the frontend dist folder
+        full_path = os.path.join(frontend_dist, path)
+        if path != "" and os.path.exists(full_path) and os.path.isfile(full_path):
+            return send_from_directory(frontend_dist, path)
         
         # Otherwise serve index.html for client side routing
-        return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(frontend_dist, 'index.html')
 
     logger.info("TermScope API initialized successfully")
     return app

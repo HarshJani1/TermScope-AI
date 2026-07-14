@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { login } from '../api/client'
-import { ShieldCheck, Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
 import './Auth.css'
 
 export default function LoginPage() {
@@ -40,7 +39,7 @@ export default function LoginPage() {
       <div className="auth-card fade-in">
         <div className="auth-brand">
           <div className="auth-logo">
-            <ShieldCheck size={24} />
+            TS
           </div>
           <div>
             <div className="auth-logo-title">TermScope</div>
@@ -57,11 +56,10 @@ export default function LoginPage() {
           <div className="form-group">
             <label className="form-label">Email</label>
             <div className="input-icon-wrap">
-              <Mail size={15} className="input-icon" />
               <input
                 id="login-email"
                 type="email"
-                className="form-input input-with-icon"
+                className="form-input"
                 placeholder="john@example.com"
                 value={form.email}
                 onChange={set('email')}
@@ -74,11 +72,10 @@ export default function LoginPage() {
           <div className="form-group">
             <label className="form-label">Password</label>
             <div className="input-icon-wrap">
-              <Lock size={15} className="input-icon" />
               <input
                 id="login-password"
                 type={showPw ? 'text' : 'password'}
-                className="form-input input-with-icon input-with-toggle"
+                className="form-input input-with-toggle"
                 placeholder="Your password"
                 value={form.password}
                 onChange={set('password')}
@@ -89,7 +86,7 @@ export default function LoginPage() {
                 className="input-toggle"
                 onClick={() => setShowPw((s) => !s)}
               >
-                {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                {showPw ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
@@ -100,7 +97,7 @@ export default function LoginPage() {
             className="btn btn-primary btn-lg auth-submit"
             disabled={loading}
           >
-            {loading ? <><div className="spinner" />Signing in…</> : <>Sign In <ArrowRight size={16} /></>}
+            {loading ? <><div className="spinner" />Signing in…</> : 'Sign In'}
           </button>
         </form>
 
